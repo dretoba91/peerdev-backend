@@ -1,0 +1,32 @@
+{
+  "name": "peerdev-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test-db": "ts-node src/test-db-connection.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "start": "tsc && node dist/index.js",
+    "migrate": "ts-node src/scripts/run-migrations.ts",
+    "seed:roles": "ts-node src/scripts/seed-roles.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Backend API for PeerDev - A peer-to-peer development platform with authentication and database management",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.14.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.1.0",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.2"
+  }
+}
