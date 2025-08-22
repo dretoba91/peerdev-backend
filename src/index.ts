@@ -1,8 +1,12 @@
 
 import dotenv from 'dotenv';
 import express from 'express';
-import { Request, Response } from 'express';
-import pool from './config/db';
+import { Request, Response } from "express";
+import pool from "./config/db";
+import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
+import authRoutes from "./routes/auth.routes";
+import userRoutes from "./routes/user.routes";
+import { specs, swaggerUi } from "./config/swagger";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -19,6 +23,26 @@ app.get("/", (_req: Request, res: Response) => {
   res.send("PeerDev API is running...");
 });
 
+// API Documentation
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(specs, {
+    explorer: true,
+    customCss: ".swagger-ui .topbar { display: none }",
+    customSiteTitle: "PeerDev API Documentation",
+  })
+);
+
+// API routes
+app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/auth", authRoutes);
+
+// 404 handler for unmatched routes
+app.use(notFoundHandler);
+
+// Global error handler (must be last)
+app.use(errorHandler);
 
 // Start server after DB connects
 

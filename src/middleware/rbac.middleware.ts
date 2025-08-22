@@ -170,12 +170,12 @@ export class RBACMiddleware {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         if (!req.user) {
-          res.status(401).json({ error: 'Authentication required' });
+          res.status(401).json({ error: "Authentication required" });
           return;
         }
 
-        const targetUserId = parseInt(req.params[userIdParam]);
-        
+        const targetUserId = req.params[userIdParam]; // UUID string
+
         // Check if user is accessing their own resource
         if (req.user.id === targetUserId) {
           next();
@@ -186,7 +186,10 @@ export class RBACMiddleware {
         if (req.user.role_id) {
           const userRole = await RoleModel.findById(req.user.role_id);
           if (userRole) {
-            const hasAdminPrivileges = await RBACMiddleware.roleService.hasAdminPrivileges(userRole.name);
+            const hasAdminPrivileges =
+              await RBACMiddleware.roleService.hasAdminPrivileges(
+                userRole.name
+              );
             if (hasAdminPrivileges) {
               next();
               return;
@@ -194,8 +197,9 @@ export class RBACMiddleware {
           }
         }
 
-        res.status(403).json({ 
-          error: 'Access denied. You can only access your own resources or need admin privileges.'
+        res.status(403).json({
+          error:
+            "Access denied. You can only access your own resources or need admin privileges.",
         });
       } catch (error) {
         logger.error('Ownership check error:', error);

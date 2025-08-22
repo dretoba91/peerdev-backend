@@ -8,9 +8,9 @@ declare global {
   namespace Express {
     interface Request {
       user?: {
-        id: number;
+        id: string; // UUID
         email: string;
-        role_id?: number;
+        role_id?: string; // UUID
         experience_level?: string;
         full_name: string;
       };
@@ -19,9 +19,9 @@ declare global {
 }
 
 export interface JWTPayload {
-  userId: number;
+  userId: string; // UUID
   email: string;
-  role_id?: number;
+  role_id?: string; // UUID
   iat?: number;
   exp?: number;
 }
