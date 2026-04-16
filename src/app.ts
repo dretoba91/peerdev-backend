@@ -3,10 +3,12 @@ import dotenv from 'dotenv';
 import express from 'express';
 import { Request, Response } from "express";
 import pool from "./config/db";
-import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
-import authRoutes from "./routes/auth.routes";
-import userRoutes from "./routes/user.routes";
+import { notFoundHandler, errorHandler } from "./shared/middleware/errorHandler";
+import authRoutes from "./modules/auth/auth.routes";
+import userRoutes from "./modules/user/user.routes";
 import { specs, swaggerUi } from "./config/swagger";
+import redis from './config/redis';
+import { logger } from './shared/utils/loggers';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -51,6 +53,11 @@ async function startServer() {
     const connection = await pool.getConnection();
     console.log("✅ Connected to MySQL");
     connection.release();
+
+    // Verify Redis
+    await redis.ping();
+    logger.info('✅ Connected to Redis');
+
 
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on http://localhost:${PORT}`);

@@ -21,8 +21,24 @@ services:
       timeout: 20s
       retries: 10
 
+redis:
+    image: redis:7-alpine
+    container_name: peerdev-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - peerdev-redis-data:/data
+    networks:
+      - peerdev-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 10s
+      retries: 5
+
 volumes:
   peerdev-mysql-data:
+  peerdev-redis-data:
 
 networks:
   peerdev-net:

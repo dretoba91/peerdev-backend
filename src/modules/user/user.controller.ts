@@ -1,6 +1,6 @@
 
 import { Request, Response, NextFunction } from 'express';
-import { UserService } from '../services/user.service';
+import { UserService } from './user.service';
 
 export class UserController {
   private userService: UserService;
@@ -12,8 +12,11 @@ export class UserController {
   // Implement user controller methods here
   async createUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const { full_name, email, password, role_id, experience_level } = req.body;
-      const user = await this.userService.createUser({ full_name, email, password, role_id, experience_level });
+      const { first_name, last_name, email, password, experience_level } = req.body;
+      const user = await this.userService.createUser({
+        first_name, last_name, email, password, experience_level,
+        role_id: ''
+      });
       res.status(201).json(user);
     } catch (error) {
       next(error);
@@ -70,8 +73,8 @@ export class UserController {
   // update user role
   async updateUserRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id, roleType } = req.body; // id is now UUID string
-      const updatedUser = await this.userService.updateUserRole(id, roleType);
+      const { user_id, role_id } = req.body;
+      const updatedUser = await this.userService.updateUserRole(user_id, role_id);
       res.json(updatedUser);
     } catch (error) {
       next(error);

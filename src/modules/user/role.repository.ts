@@ -1,13 +1,6 @@
-import pool from "../config/db";
+import pool from "../../config/db";
 import { v4 as uuidv4 } from "uuid";
-
-export interface Role {
-  id?: string; // UUID primary key
-  name: string;
-  description?: string;
-  created_at?: Date;
-  updated_at?: Date;
-}
+import type { Role } from "./user.types";
 
 export const RoleModel = {
   // create
@@ -37,6 +30,7 @@ export const RoleModel = {
     ]);
     return (result as Role[])[0] || null;
   },
+  
 
   // find by Name
   async findByName(name: string) {

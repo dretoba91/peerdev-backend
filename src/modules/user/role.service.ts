@@ -1,5 +1,23 @@
-import { Role, RoleModel } from "../models/role.model";
-import { logger } from "../utils/loggers";
+import type { Role } from "./user.types";
+import { RoleModel } from "./role.repository";
+import { logger } from "../../shared/utils/loggers";
+
+/**
+ * Role Name:
+ * learner - default role for users who want to acquire new skills
+ * mentor - experienced individuals who can guide and teach others
+ * content_contributor - creates educational content and tutorials
+ * event_host - organizes peer learning sessions and events
+ * moderator - can moderate content and discussions
+ * administrator - manages users and platform settings
+ * super_admin - has all permissions including managing administrators
+ *
+ * Experience Level to Role Mapping:
+ * Note: Everyone is a learner by default.
+ * The 'mentor' role is auto-assigned to senior-level users.
+ * beginner, junior, mid_level -> learner
+ * senior, lead, manager, principal, architect -> learner, mentor
+ */
 
 export class RoleService {
   // Get role by name
@@ -19,6 +37,16 @@ export class RoleService {
       return role ? role.id! : null;
     } catch (error) {
       logger.error("Get role ID error:", error);
+      throw error;
+    }
+  }
+
+  // Get role by ID
+  async getRoleById(roleId: string): Promise<Role | null> {
+    try {
+      return await RoleModel.findById(roleId);
+    } catch (error) {
+      logger.error("Get role by ID error:", error);
       throw error;
     }
   }
@@ -45,47 +73,48 @@ export class RoleService {
   }
 
   // Get suggested role based on experience level
-  getSuggestedRoleByExperience(experienceLevel: string): string {
+  getSuggestedRolesByExperience(experienceLevel: string): string[] {
+    const roles = ["learner"]; // Everyone is a learner by default
     switch (experienceLevel.toLowerCase()) {
-      case "beginner":
-      case "junior":
-        return "developer"; // Learners who need help
-      case "mid_level":
-        return "developer"; // Can be both learner and helper
       case "senior":
       case "lead":
-        return "mentor"; // Experienced enough to mentor others
       case "manager":
       case "principal":
       case "architect":
-        return "mentor"; // Senior roles that can guide others
+        roles.push("mentor"); // Add 'mentor' role for experienced users
+        break;
       default:
-        return "developer"; // Default fallback
+        // No additional roles for beginner, junior, mid_level
+        break;
     }
+    return roles;
   }
 
   // Check if role can mentor others
-  async canMentor(roleName: string): Promise<boolean> {
-    const mentorRoles = ["mentor", "admin", "super_admin"];
-    return mentorRoles.includes(roleName.toLowerCase());
+  // Supports a single role name or an array of role names
+  async canMentor(roles: string | string[]): Promise<boolean> {
+    const normalizedRoles = Array.isArray(roles) ? roles : [roles];
+    return normalizedRoles.includes("mentor");
   }
 
   // Check if role has admin privileges
-  async hasAdminPrivileges(roleName: string): Promise<boolean> {
-    const adminRoles = ["admin", "super_admin"];
-    return adminRoles.includes(roleName.toLowerCase());
+  async hasAdminPrivileges(roles: string | string[]): Promise<boolean> {
+    const normalizedRoles = Array.isArray(roles) ? roles : [roles];
+    const adminRoles = ["administrator", "super_admin"];
+    return normalizedRoles.some((role) => adminRoles.includes(role));
   }
 
   // Get role hierarchy level (useful for permissions)
+  // The role levels should be updated to match the new roles
   getRoleLevel(roleName: string): number {
     const roleLevels: { [key: string]: number } = {
-      developer: 1,
-      mentor: 2,
+      learner: 1,
+      content_contributor: 2,
+      event_host: 2,
       moderator: 3,
-      event_organizer: 2,
-      content_creator: 2,
-      admin: 4,
-      super_admin: 5,
+      mentor: 4,
+      administrator: 5,
+      super_admin: 6,
     };
     return roleLevels[roleName.toLowerCase()] || 0;
   }

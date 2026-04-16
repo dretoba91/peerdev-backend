@@ -1,7 +1,7 @@
 // src/scripts/seed-roles.ts
 import fs from "fs";
 import path from "path";
-import pool from "../config/db";
+import pool from "../../config/db";
 
 async function seedRoles() {
   const sqlPath = path.join(__dirname, "../seed/seed_roles.sql");

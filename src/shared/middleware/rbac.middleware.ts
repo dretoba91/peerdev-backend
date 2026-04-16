@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { RoleService } from '../services/role.service';
-import { RoleModel } from '../models/role.model';
+import { RoleService } from '../../modules/user/role.service';
+import { RoleModel } from '../../modules/user/role.repository';
 import { logger } from '../utils/loggers';
 
 export class RBACMiddleware {

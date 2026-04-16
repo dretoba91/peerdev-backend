@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { UserController } from "../controllers/user.controller";
-import { RBACMiddleware } from "../middleware/rbac.middleware";
+import { UserController } from "./user.controller";
+import { RBACMiddleware } from "../../shared/middleware/rbac.middleware";
 
 const router = Router();
 const userController = new UserController();
@@ -87,7 +87,8 @@ router.post("/", userController.createUser.bind(userController));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/", userController.getAllUsers.bind(userController));
+// Must be authorized, admin, super_admin, moderator, or mentor to view all users
+router.get("/", RBACMiddleware.requireRole(['mentor', 'moderator', 'admin', 'super_admin']), userController.getAllUsers.bind(userController));
 
 /**
  * @swagger
@@ -277,20 +278,20 @@ router.delete("/:id", userController.deleteUser.bind(userController));
  *           schema:
  *             type: object
  *             properties:
- *               id:
+ *               user_id:
  *                 type: string
  *                 format: uuid
  *                 description: User UUID
  *                 example: "cb26fcea-5356-4201-8ead-d98c66e1e543"
- *               roleType:
+ *               role_id:
  *                 type: string
- *                 enum: ['developer', 'mentor', 'moderator', 'event_organizer', 'content_creator', 'admin', 'super_admin']
- *                 description: New role for the user
- *                 example: "mentor"
- *             required: [id, roleType]
+ *                 format: uuid
+ *                 description: New role UUID for the user
+ *                 example: "aa933299-7d29-11f0-9050-b248b0b45048"
+ *             required: [user_id, role_id]
  *           example:
- *             id: "cb26fcea-5356-4201-8ead-d98c66e1e543"
- *             roleType: "mentor"
+ *             user_id: "cb26fcea-5356-4201-8ead-d98c66e1e543"
+ *             role_id: "aa933299-7d29-11f0-9050-b248b0b45048"
  *     responses:
  *       200:
  *         description: User role updated successfully
