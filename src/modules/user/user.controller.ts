@@ -5,17 +5,22 @@ import { UserService } from './user.service';
 export class UserController {
   private userService: UserService;
 
-  constructor() {
-    this.userService = new UserService();
+  constructor(userService: UserService) {
+    this.userService = userService;
   }
 
   // Implement user controller methods here
   async createUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const { first_name, last_name, email, password, experience_level } = req.body;
+      const { first_name, last_name, email, password, experience_level } =
+        req.body;
       const user = await this.userService.createUser({
-        first_name, last_name, email, password, experience_level,
-        role_id: ''
+        first_name,
+        last_name,
+        email,
+        password,
+        experience_level,
+        role_id: "",
       });
       res.status(201).json(user);
     } catch (error) {
@@ -23,7 +28,7 @@ export class UserController {
     }
   }
 
-  async getAllUsers(req: Request, res: Response, next: NextFunction) {      
+  async getAllUsers(req: Request, res: Response, next: NextFunction) {
     try {
       const users = await this.userService.findAllUsers();
       res.json(users);
@@ -37,7 +42,7 @@ export class UserController {
       const id = req.params.id; // UUID string
       const user = await this.userService.findUserById(id);
       if (!user) {
-        res.status(404).json({ error: 'User not found' });
+        res.status(404).json({ error: "User not found" });
         return;
       }
       res.json(user);
@@ -46,12 +51,12 @@ export class UserController {
     }
   }
 
-  async updateUser(req: Request, res: Response, next: NextFunction) {      
+  async updateUser(req: Request, res: Response, next: NextFunction) {
     try {
       const user = req.body;
       const updatedUser = await this.userService.updateUser(user);
       if (!updatedUser) {
-        res.status(404).json({ error: 'User not found' });
+        res.status(404).json({ error: "User not found" });
         return;
       }
       res.json(updatedUser);
@@ -74,7 +79,10 @@ export class UserController {
   async updateUserRole(req: Request, res: Response, next: NextFunction) {
     try {
       const { user_id, role_id } = req.body;
-      const updatedUser = await this.userService.updateUserRole(user_id, role_id);
+      const updatedUser = await this.userService.updateUserRole(
+        user_id,
+        role_id,
+      );
       res.json(updatedUser);
     } catch (error) {
       next(error);

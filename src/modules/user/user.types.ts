@@ -1,35 +1,34 @@
 export interface User {
-  id?:                          string;
+  id?: string;
 
-  first_name:                   string;
-  last_name:                    string;
+  first_name: string;
+  last_name: string;
 
-  email:                        string;
-  password:                     string;
+  email: string;
+  password: string;
 
-  username?:                    string;
-  profile_picture?:             string;
-  bio?:                         string;
-  location?:                    string;
+  username?: string;
+  profile_picture?: string;
+  bio?: string;
+  location?: string;
 
-  github_url?:                  string;
-  linkedin_url?:                string;
-  portfolio_url?:               string;
+  github_url?: string;
+  linkedin_url?: string;
+  portfolio_url?: string;
 
-  experience_level?:            ExperienceLevel;
-  role_id:                      string;
+  experience_level?: ExperienceLevel;
+  role_id: string;
 
-  is_active?:                   boolean;
-  last_login?:                  Date;
+  is_active?: boolean;
+  last_login?: Date;
 
   // email verification
-  email_verified?:              boolean;
-  verification_token?:          string | null;
-  verification_token_expires?:  Date | null;
-  refresh_token?:               string | null;
+  email_verified?: boolean;
+  verification_token?: string | null;
+  verification_token_expires?: Date | null;
 
-  created_at?:                  Date;
-  updated_at?:                  Date;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 export type ExperienceLevel =

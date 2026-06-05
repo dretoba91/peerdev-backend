@@ -9,6 +9,9 @@ import userRoutes from "./modules/user/user.routes";
 import { specs, swaggerUi } from "./config/swagger";
 import redis from './config/redis';
 import { logger } from './shared/utils/loggers';
+import { globalLimiter } from './shared/middleware/rateLimiter';
+import helmet from 'helmet';
+import skillRoutes from './modules/skills/skill.routes';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -17,8 +20,34 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
+// Trust first proxy (if behind a reverse proxy like Nginx or Heroku)
+app.set('trust proxy', 1);
+
+// Security middleware for setting various HTTP headers
+app.use(helmet({
+  contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],   // Swagger UI
+        styleSrc: ["'self'", "'unsafe-inline'"],    // Swagger UI
+        imgSrc: ["'self'", 'data:', 'https:'],      // Swagger UI
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,  // Swagger compatibility
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+}));
+
 // Middleware to parse JSON bodies
 app.use(express.json());
+
+// global rate limiter
+app.use(globalLimiter);
 
 // Health check
 app.get("/", (_req: Request, res: Response) => {
@@ -39,6 +68,7 @@ app.use(
 // API routes
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/skills", skillRoutes)
 
 // 404 handler for unmatched routes
 app.use(notFoundHandler);

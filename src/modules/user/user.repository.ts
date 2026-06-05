@@ -75,13 +75,23 @@ export const userModel = {
   // Flexible partial update — only updates fields you pass in
   async update(id: string, fields: Partial<User>) {
     const allowed: (keyof User)[] = [
-      'first_name', 'last_name', 'email', 'username',
-      'profile_picture', 'bio', 'location',
-      'github_url', 'linkedin_url', 'portfolio_url',
-      'experience_level', 'role_id', 'is_active',
-      'last_login', 'email_verified',
-      'verification_token', 'verification_token_expires',
-      'refresh_token',
+      "first_name",
+      "last_name",
+      "email",
+      "username",
+      "profile_picture",
+      "bio",
+      "location",
+      "github_url",
+      "linkedin_url",
+      "portfolio_url",
+      "experience_level",
+      "role_id",
+      "is_active",
+      "last_login",
+      "email_verified",
+      "verification_token",
+      "verification_token_expires",
     ];
 
     // Build SET clause dynamically from only the fields passed in

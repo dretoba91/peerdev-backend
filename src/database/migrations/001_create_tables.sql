@@ -41,7 +41,6 @@ CREATE TABLE users (
     email_verified BOOLEAN DEFAULT FALSE,
     verification_token VARCHAR(255) NULL,
     verification_token_expires TIMESTAMP NULL,
-    refresh_token VARCHAR(255) NULL,
 
     FOREIGN KEY (role_id) REFERENCES roles(id),
 
@@ -137,3 +136,6 @@ CREATE TABLE notifications (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_notifications_user_read (user_id, is_read)
 );
+
+
+

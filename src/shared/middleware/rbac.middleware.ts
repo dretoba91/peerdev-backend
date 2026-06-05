@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { RoleService } from '../../modules/user/role.service';
 import { RoleModel } from '../../modules/user/role.repository';
 import { logger } from '../utils/loggers';
+import { AppError, ForbiddenError, UnauthorizedError } from "../utils/errors";
 
 export class RBACMiddleware {
   private static roleService = new RoleService();
@@ -11,20 +12,17 @@ export class RBACMiddleware {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         if (!req.user) {
-          res.status(401).json({ error: 'Authentication required' });
-          return;
+          return next(new UnauthorizedError("Authentication required"));
         }
 
         if (!req.user.role_id) {
-          res.status(403).json({ error: 'No role assigned to user' });
-          return;
+          return next(new ForbiddenError("No role assigned to user"));
         }
 
         // Get user's role
         const userRole = await RoleModel.findById(req.user.role_id);
         if (!userRole) {
-          res.status(403).json({ error: 'Invalid user role' });
-          return;
+          return next(new ForbiddenError("Invalid user role"));
         }
 
         // Normalize allowed roles to array
@@ -36,18 +34,13 @@ export class RBACMiddleware {
         );
 
         if (!hasPermission) {
-          res.status(403).json({ 
-            error: 'Insufficient permissions',
-            required: rolesArray,
-            current: userRole.name
-          });
-          return;
+          return next(new ForbiddenError("Insufficient permissions"));
         }
 
         next();
       } catch (error) {
         logger.error('Role check error:', error);
-        res.status(500).json({ error: 'Permission check failed' });
+        return next(new AppError('Permission check failed', 500));
       }
     };
   }
@@ -57,34 +50,27 @@ export class RBACMiddleware {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         if (!req.user) {
-          res.status(401).json({ error: 'Authentication required' });
-          return;
+          return next(new UnauthorizedError("Authentication required"));;
         }
 
         if (!req.user.role_id) {
-          res.status(403).json({ error: 'No role assigned to user' });
-          return;
+          return next(new ForbiddenError("No role assigned to user"));
         }
 
         const userRole = await RoleModel.findById(req.user.role_id);
         if (!userRole) {
-          res.status(403).json({ error: 'Invalid user role' });
-          return;
+          return next(new ForbiddenError("Invalid user role"));
         }
 
         const canMentor = await RBACMiddleware.roleService.canMentor(userRole.name);
         if (!canMentor) {
-          res.status(403).json({ 
-            error: 'Mentor privileges required',
-            current_role: userRole.name
-          });
-          return;
+          return next(new ForbiddenError("Mentor privileges required"));
         }
 
         next();
       } catch (error) {
         logger.error('Mentor role check error:', error);
-        res.status(500).json({ error: 'Permission check failed' });
+        return next(new AppError("Permission check failed", 500));
       }
     };
   }
@@ -94,34 +80,27 @@ export class RBACMiddleware {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         if (!req.user) {
-          res.status(401).json({ error: 'Authentication required' });
-          return;
+          return next(new UnauthorizedError("Authentication required"));
         }
 
         if (!req.user.role_id) {
-          res.status(403).json({ error: 'No role assigned to user' });
-          return;
+          return next(new ForbiddenError("No role assigned to user"));
         }
 
         const userRole = await RoleModel.findById(req.user.role_id);
         if (!userRole) {
-          res.status(403).json({ error: 'Invalid user role' });
-          return;
+          return next(new ForbiddenError("Invalid user role"));
         }
 
         const hasAdminPrivileges = await RBACMiddleware.roleService.hasAdminPrivileges(userRole.name);
         if (!hasAdminPrivileges) {
-          res.status(403).json({ 
-            error: 'Admin privileges required',
-            current_role: userRole.name
-          });
-          return;
+          return next(new ForbiddenError("Admin privileges required"));
         }
 
         next();
       } catch (error) {
         logger.error('Admin role check error:', error);
-        res.status(500).json({ error: 'Permission check failed' });
+        return next(new AppError("Permission check failed", 500));
       }
     };
   }
@@ -131,36 +110,27 @@ export class RBACMiddleware {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         if (!req.user) {
-          res.status(401).json({ error: 'Authentication required' });
-          return;
+          return next(new UnauthorizedError("Authentication required"));
         }
 
         if (!req.user.role_id) {
-          res.status(403).json({ error: 'No role assigned to user' });
-          return;
+          return next(new ForbiddenError("No role assigned to user"));
         }
 
         const userRole = await RoleModel.findById(req.user.role_id);
         if (!userRole) {
-          res.status(403).json({ error: 'Invalid user role' });
-          return;
+          return next(new ForbiddenError("Invalid user role"));
         }
 
         const userRoleLevel = RBACMiddleware.roleService.getRoleLevel(userRole.name);
         if (userRoleLevel < minimumLevel) {
-          res.status(403).json({ 
-            error: 'Insufficient role level',
-            required_level: minimumLevel,
-            current_level: userRoleLevel,
-            current_role: userRole.name
-          });
-          return;
+          return next(new ForbiddenError("Insufficient role level"));
         }
 
         next();
       } catch (error) {
         logger.error('Role level check error:', error);
-        res.status(500).json({ error: 'Permission check failed' });
+        return next(new AppError("Permission check failed", 500));
       }
     };
   }
@@ -170,8 +140,7 @@ export class RBACMiddleware {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         if (!req.user) {
-          res.status(401).json({ error: "Authentication required" });
-          return;
+          return next(new UnauthorizedError("Authentication required"));
         }
 
         const targetUserId = req.params[userIdParam]; // UUID string
@@ -197,13 +166,10 @@ export class RBACMiddleware {
           }
         }
 
-        res.status(403).json({
-          error:
-            "Access denied. You can only access your own resources or need admin privileges.",
-        });
+        return next(new ForbiddenError("Access denied. You can only access your own resources or need admin privileges."));
       } catch (error) {
         logger.error('Ownership check error:', error);
-        res.status(500).json({ error: 'Permission check failed' });
+        return next(new AppError("Permission check failed", 500));
       }
     };
   }

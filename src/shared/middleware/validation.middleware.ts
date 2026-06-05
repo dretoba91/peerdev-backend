@@ -47,12 +47,16 @@ export class ValidationMiddleware {
   static validateUserRegistration() {
     return (req: Request, res: Response, next: NextFunction): void => {
       try {
-        const { full_name, email, password, experience_level } = req.body;
+        const { first_name, last_name, email, password, experience_level } = req.body;
         const errors: string[] = [];
 
         // Validate required fields
-        if (!full_name || full_name.trim().length === 0) {
-          errors.push("Full name is required");
+        if (!first_name || first_name.trim().length === 0) {
+          errors.push("First name is required");
+        }
+
+        if (!last_name || last_name.trim().length === 0) {
+          errors.push("Last name is required");
         }
 
         if (!email) {
@@ -152,13 +156,7 @@ export class ValidationMiddleware {
           errors.push("Role type is required");
         } else {
           const validRoles = [
-            "developer",
             "mentor",
-            "moderator",
-            "event_organizer",
-            "content_creator",
-            "admin",
-            "super_admin",
           ];
           if (!validRoles.includes(roleType.toLowerCase())) {
             errors.push(
