@@ -12,6 +12,8 @@ import { logger } from './shared/utils/loggers';
 import { globalLimiter } from './shared/middleware/rateLimiter';
 import helmet from 'helmet';
 import skillRoutes from './modules/skills/skill.routes';
+import sessionRequestRoutes from './modules/session-request/session-request.routes';
+import sessionRoutes from './modules/session/session.routes';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -68,7 +70,9 @@ app.use(
 // API routes
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/skills", skillRoutes)
+app.use("/api/v1/skills", skillRoutes);
+app.use('/api/v1/requests', sessionRequestRoutes);
+app.use('/api/v1/sessions', sessionRoutes);
 
 // 404 handler for unmatched routes
 app.use(notFoundHandler);

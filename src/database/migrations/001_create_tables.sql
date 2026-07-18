@@ -49,7 +49,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE skills (
-    id VARCHAR(36) PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     name VARCHAR(100) NOT NULL UNIQUE,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -66,10 +66,10 @@ CREATE TABLE user_skills (
 );
 
 CREATE TABLE session_requests (
-    id VARCHAR(36) PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
 
     requester_id VARCHAR(36) NOT NULL,
-    mentor_id VARCHAR(36) NOT NULL,
+    recipient_id VARCHAR(36) NOT NULL,
     skill_id VARCHAR(36) NOT NULL,
 
     message TEXT,
@@ -79,22 +79,22 @@ CREATE TABLE session_requests (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (mentor_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (skill_id) REFERENCES skills(id),
 
     INDEX idx_requests_status (status),
-    INDEX idx_requests_mentor (mentor_id)
+    INDEX idx_requests_recipient (recipient_id)
 );
 
 CREATE TABLE sessions (
-    id VARCHAR(36) PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
 
     request_id VARCHAR(36) NOT NULL UNIQUE,
 
     scheduled_at DATETIME NOT NULL,
     duration_minutes INT DEFAULT 60,
 
-    status ENUM('scheduled','completed','cancelled') DEFAULT 'scheduled',
+    status ENUM('scheduled','completed','cancelled', 'expired') DEFAULT 'scheduled',
 
     meeting_link VARCHAR(255),
 
@@ -104,7 +104,7 @@ CREATE TABLE sessions (
 );
 
 CREATE TABLE messages (
-    id VARCHAR(36) PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
 
     session_id VARCHAR(36),
     sender_id VARCHAR(36),
@@ -123,7 +123,7 @@ CREATE TABLE messages (
 );
 
 CREATE TABLE notifications (
-    id VARCHAR(36) PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
 
     user_id VARCHAR(36),
     type VARCHAR(50),

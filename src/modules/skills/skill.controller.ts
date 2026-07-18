@@ -24,9 +24,10 @@ export class SkillController {
     async getSkillsByName(req: Request, res: Response, next: NextFunction) {
         try {
             const { name } = req.query;
+            const { page, limit } = req.query;
             // Ensure we pass a string or default to an empty string for "return all"
             const searchTerm = typeof name === 'string' ? name.trim() : '';
-            const skills = await this.skillService.getSkillsByName(searchTerm);
+            const skills = await this.skillService.getSkillsByName(searchTerm, page, limit);
             res.status(200).json(skills);
         } catch (error) {
             next(error)

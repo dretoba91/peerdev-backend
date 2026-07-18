@@ -33,14 +33,22 @@ export const userModel = {
 
   // Method to find all users with their associated roles
 
-  async findAll() {
-    const [rows] = await pool.execute(
+  async findAll(limit: number, offset: number): Promise<{ users: User[], total: number }> {
+    const [userData, countResult] = await Promise.all([
+      pool.execute(
       `SELECT u.*, r.name AS role_name
        FROM users u
-       LEFT JOIN roles r ON u.role_id = r.id`
+       LEFT JOIN roles r ON u.role_id = r.id
+       LIMIT ? OFFSET ?`,
+       [limit, offset]
+    ),
+    pool.execute(`SELECT COUNT(*) as total FROM users`, [])
+    ]) as [[User[], any], [{ total: number }[], any]];
 
-    );
-    return rows as User[];
+    const rows = userData[0] as User[];
+    const total = countResult[0][0].total;
+    
+    return { users: rows, total: total };
   },
 
   // Method to find a user by their ID with all their roles

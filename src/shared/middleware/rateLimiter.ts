@@ -122,3 +122,14 @@ export const removeSkillLimiter = rateLimit({
     res.status(429).json({ error: 'Too many skill removals. Try again later.' });
   }
 });
+
+export const createSessionRequestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  keyGenerator: (req) => `session-request-${req.user?.id || req.ip}`,
+  handler: (req, res) => {
+    logger.warn(`Session request limit exceeded for user: ${req.user?.id}`);
+    res.status(429).json({ error: 'Too many session requests. Try again later.' });
+  }
+});
+

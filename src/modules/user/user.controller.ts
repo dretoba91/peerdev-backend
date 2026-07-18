@@ -30,7 +30,9 @@ export class UserController {
 
   async getAllUsers(req: Request, res: Response, next: NextFunction) {
     try {
-      const users = await this.userService.findAllUsers();
+      // 1. Extract query params from the incoming HTTP request URL
+      const { page, limit } = req.query;
+      const users = await this.userService.findAllUsers(page, limit);
       res.json(users);
     } catch (error) {
       next(error);

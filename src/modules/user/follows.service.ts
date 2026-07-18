@@ -6,6 +6,7 @@ import {
   NotFoundError,
 } from "../../shared/utils/errors";
 import { logger } from "../../shared/utils/loggers";
+import { buildPagination, PaginatedResponse } from "../../shared/utils/pagination";
 import { MessageResponse } from "../../shared/utils/response";
 import { FollowWithUser } from "./follow.types";
 import { followsRepository } from "./follows.respository";
@@ -66,15 +67,21 @@ export class FollowService {
 
   // get all followers.
 
-  async getFollowers(user_id: string): Promise<FollowWithUser[]> {
+  async getFollowers(user_id: string, page: any, limit: any): Promise<PaginatedResponse<FollowWithUser>> {
     try {
+      const parsedPage  = Math.max(1, parseInt(page) || 1);
+      const parsedLimit = Math.max(1, Math.min(100, parseInt(limit) || 10));
+      const offset      = (parsedPage - 1) * parsedLimit;
       // check if user exist
       const existingUser = await this.user_service.findUserById(user_id);
       if (!existingUser) {
         throw new NotFoundError("User not found");
       }
-      const followers = await followsRepository.getFollowers(user_id);
-      return followers;
+      const {followers, total} = await followsRepository.getFollowers(user_id, parsedLimit, offset);
+
+      // buildPagination calculates totalPages, hasNextPage etc.
+        const pagination = buildPagination(total, parsedPage, parsedLimit);
+      return { data: followers, pagination: pagination };
     } catch (error) {
       logger.error("Get followers error:", error);
       throw error;
@@ -82,15 +89,21 @@ export class FollowService {
   }
 
   // get all following.
-  async getFollowing(user_id: string): Promise<FollowWithUser[]> {
+  async getFollowing(user_id: string, page: any, limit: any): Promise<PaginatedResponse<FollowWithUser>> {
     try {
+      const parsedPage  = Math.max(1, parseInt(page) || 1);
+      const parsedLimit = Math.max(1, Math.min(100, parseInt(limit) || 10)); 
+      const offset      = (parsedPage - 1) * parsedLimit;
       // check if user exist
       const existingUser = await this.user_service.findUserById(user_id);
       if (!existingUser) {
         throw new NotFoundError("User not found");
       }
-      const following = await followsRepository.getFollowing(user_id);
-      return following;
+      const {followings, total} = await followsRepository.getFollowing(user_id, parsedLimit, offset);
+
+      // buildPagination calculates totalPages, hasNextPage etc.
+        const pagination = buildPagination(total, parsedPage, parsedLimit);
+      return {data: followings, pagination: pagination};
     } catch (error) {
       logger.error("Get following error:", error);
       throw error;

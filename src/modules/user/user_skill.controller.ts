@@ -36,7 +36,8 @@ export class UserSkillController {
     async getUsersBySkill(req: Request, res: Response, next: NextFunction) {
         try {
             const skillId = req.params.skillId;
-            const users = await this.userSkillService.getUsersBySkill(skillId);
+            const { page, limit } = req.query;
+            const users = await this.userSkillService.getUsersBySkill(skillId, page, limit);
             res.status(200).json(users);
         } catch (error) {
             next(error)

@@ -14,27 +14,46 @@ export const followsRepository = {
   },
 
   // Method to get all followers of a user
-  async getFollowers(userId: string): Promise<FollowWithUser[]> {
-    const [rows] = await pool.execute(
+  async getFollowers(userId: string, limit: number, offset: number): Promise<{followers: FollowWithUser[], total: number}> {
+    const [followerData, countData] = await Promise.all([
+    pool.execute(
       `SELECT f.id, f.follower_id, f.following_id, f.created_at, u.username, u.first_name, u.last_name 
        FROM follows AS f 
        JOIN users AS u ON f.follower_id = u.id 
-       WHERE f.following_id = ?`,
+       WHERE f.following_id = ?
+       LIMIT ? OFFSET ?`,
+      [userId, limit, offset],
+    ),
+    pool.execute(
+      `SELECT COUNT(*) as total FROM follows WHERE following_id = ?`,
       [userId],
-    );
-    return rows as FollowWithUser[];
+    )
+    ]) as [[FollowWithUser[], any], [{ total: number }[], any]];
+    const rows = followerData[0] as FollowWithUser[];
+    const total = countData[0][0].total;
+    return { followers: rows, total: total };
   },
 
   // Method to get all users that a user is following
-  async getFollowing(userId: string): Promise<FollowWithUser[]> {
-    const [rows] = await pool.execute(
+  async getFollowing(userId: string, limit: number, offset: number): Promise<{followings: FollowWithUser[], total: number}> {
+    const [followingData, countData] = await Promise.all([
+    pool.execute(
       `SELECT f.id, f.follower_id, f.following_id, f.created_at, u.username, u.first_name, u.last_name 
        FROM follows AS f 
        JOIN users AS u ON f.following_id = u.id 
-       WHERE f.follower_id = ?`,
+       WHERE f.follower_id = ?
+       LIMIT ? OFFSET ?`,
+      [userId, limit, offset],
+    ),
+    pool.execute(
+      `SELECT COUNT(*) as total FROM follows WHERE follower_id = ?`,
       [userId],
-    );
-    return rows as FollowWithUser[];
+    )
+    ]) as [[FollowWithUser[], any], [{ total: number }[], any]];
+    const rows = followingData[0] as FollowWithUser[];
+    const total = countData[0][0].total;
+    return { followings: rows, total: total };
+    
   },
 
   // Method to check is a user is already following another user.

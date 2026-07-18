@@ -1,5 +1,5 @@
 CREATE TABLE follows (
-    id VARCHAR(36) PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     follower_id VARCHAR(36) NOT NULL,
     following_id VARCHAR(36) NOT NULL,
 
