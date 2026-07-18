@@ -1,8 +1,24 @@
 import { Router } from "express";
+import { RoleService } from "../user/role.service";
+import { UserService } from "../user/user.service";
+import { AuthService } from "./auth.service";
 import { AuthController } from "./auth.controller";
+import {
+  loginLimiter,
+  otpLimiter,
+  refreshLimiter,
+  registrationLimiter,
+  resendOtpLimiter,
+} from "../../shared/middleware/rateLimiter";
+import { authenticate } from "../../shared/middleware/auth.middleware";
+import { MiddlewareCombo } from "../../shared/middleware";
 
 const router = Router();
-const authController = new AuthController();
+const roleService = new RoleService();
+const userService = new UserService(roleService);
+const authService = new AuthService(userService);
+const authController = new AuthController(authService);
+
 
 /**
  * @swagger
@@ -27,33 +43,36 @@ const authController = new AuthController();
  *             developer:
  *               summary: Register as developer
  *               value:
- *                 full_name: "John Doe"
+ *                 first_name: "John"
+ *                 last_name: "Doe"
  *                 email: "john.doe@example.com"
  *                 password: "SecurePassword123!"
  *                 experience_level: "mid_level"
  *             senior:
  *               summary: Register as senior developer
  *               value:
- *                 full_name: "Jane Smith"
+ *                 first_name: "John"
+ *                 last_name: "Doe"
+ *                 email: "john.doe@example.com"
+ *                 password: "SecurePassword123!"
+ *                 experience_level: "mid_level"
+ *             senior:
+ *               summary: Register as senior developer
+ *               value:
+ *                 first_name: "Jane"
+ *                 last_name: "Smith"
  *                 email: "jane.smith@example.com"
  *                 password: "StrongPassword456!"
  *                 experience_level: "senior"
  *     responses:
  *       201:
- *         description: User registered successfully
+ *         description: Registration successful. Please verify your email.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/UserWithToken'
+ *               $ref: '#/components/schemas/MessageResponse'
  *             example:
- *               id: "cb26fcea-5356-4201-8ead-d98c66e1e543"
- *               full_name: "John Doe"
- *               email: "john.doe@example.com"
- *               role_id: "aa933299-7d29-11f0-9050-b248b0b45048"
- *               experience_level: "mid_level"
- *               created_at: "2025-08-19T17:47:56.000Z"
- *               updated_at: "2025-08-19T17:47:56.000Z"
- *               access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *               message: "Registration successful. Please verify your email."
  *       400:
  *         description: Invalid input data
  *         content:
@@ -77,7 +96,12 @@ const authController = new AuthController();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/register", authController.registerUser.bind(authController));
+router.post(
+  "/register",
+  registrationLimiter,
+  ...MiddlewareCombo.userRegistrationChain(),
+  authController.registerUser.bind(authController),
+);
 
 /**
  * @swagger
@@ -100,22 +124,33 @@ router.post("/register", authController.registerUser.bind(authController));
  *                 example: "482931"
  *     responses:
  *       200:
- *         description: OTP verified. Access token issued.
+ *         description: OTP verified. Access and refresh tokens issued.
  *         content:
  *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthUserResponse'
  *             example:
- *               access_token: "eyJhbGciOiJIUzI1NiJ9..."
  *               user:
  *                 id: "cb26fcea-5356-4201-8ead-d98c66e1e543"
- *                 email: "john.doe@example.com"
  *                 first_name: "John"
  *                 last_name: "Doe"
- *       400:
+ *                 email: "john.doe@example.com"
+ *                 role_id: "aa933299-7d29-11f0-9050-b248b0b45048"
+ *                 experience_level: "mid_level"
+ *                 created_at: "2025-08-19T17:47:56.000Z"
+ *                 updated_at: "2025-08-19T17:47:56.000Z"
+ *               access_token: "eyJhbGciOiJIUzI1NiJ9..."
+ *               refresh_token: "eyJhbGciOiJIUzI1NiJ9..."               
+ *               session_id: "cb26fcea-5356-4201-8ead-d98c66e1e543" *       400:
  *         description: Missing fields
  *       401:
  *         description: Invalid or expired OTP
  */
-router.post('/verify-otp', authController.verifyOTP.bind(authController));
+router.post(
+  "/verify-otp",
+  otpLimiter,
+  authController.verifyOTP.bind(authController),
+);
 
 /**
  * @swagger
@@ -145,7 +180,11 @@ router.post('/verify-otp', authController.verifyOTP.bind(authController));
  *       404:
  *         description: User not found
  */
-router.post('/resend-otp', authController.resendOTP.bind(authController));
+router.post(
+  "/resend-otp",
+  resendOtpLimiter,
+  authController.resendOTP.bind(authController),
+);
 
 /**
  * @swagger
@@ -168,18 +207,20 @@ router.post('/resend-otp', authController.resendOTP.bind(authController));
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/UserWithToken'
+ *               $ref: '#/components/schemas/AuthUserResponse'
  *             example:
- *               id: "cb26fcea-5356-4201-8ead-d98c66e1e543"
- *               full_name: "John Doe"
- *               email: "john.doe@example.com"
- *               role_id: "aa933299-7d29-11f0-9050-b248b0b45048"
- *               experience_level: "mid_level"
- *               created_at: "2025-08-19T17:47:56.000Z"
- *               updated_at: "2025-08-19T17:47:56.000Z"
+ *               user:
+ *                 id: "cb26fcea-5356-4201-8ead-d98c66e1e543"
+ *                 first_name: "John"
+ *                 last_name: "Doe"
+ *                 email: "john.doe@example.com"
+ *                 role_id: "aa933299-7d29-11f0-9050-b248b0b45048"
+ *                 experience_level: "mid_level"
+ *                 created_at: "2025-08-19T17:47:56.000Z"
+ *                 updated_at: "2025-08-19T17:47:56.000Z"
  *               access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *               refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *       400:
+ *               refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."               
+ *               session_id: "cb26fcea-5356-4201-8ead-d98c66e1e543" *       400:
  *         description: Invalid input data
  *         content:
  *           application/json:
@@ -202,7 +243,12 @@ router.post('/resend-otp', authController.resendOTP.bind(authController));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/login", authController.loginUser.bind(authController));
+router.post(
+  "/login",
+  loginLimiter,
+  ...MiddlewareCombo.userLoginChain(),
+  authController.loginUser.bind(authController),
+);
 
 /**
  * @swagger
@@ -240,7 +286,11 @@ router.post("/login", authController.loginUser.bind(authController));
  *       404:
  *         description: User not found
  */
-router.post("/logout", authController.logoutUser.bind(authController));
+router.post(
+  "/logout",
+  authenticate,
+  authController.logoutUser.bind(authController),
+);
 
 /**
  * @swagger
@@ -274,6 +324,10 @@ router.post("/logout", authController.logoutUser.bind(authController));
  *       404:
  *         description: User not found
  */
-router.post("/refresh", authController.refreshToken.bind(authController));
+router.post(
+  "/refresh",
+  refreshLimiter,
+  authController.refreshToken.bind(authController),
+);
 
 export default router;

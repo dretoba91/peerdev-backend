@@ -19,39 +19,39 @@ import { ConflictError, NotFoundError } from "../../shared/utils/errors";
 export class UserService {
   private roleService: RoleService;
 
-  constructor() {
-    this.roleService = new RoleService();
+  constructor(roleService: RoleService) {
+    this.roleService = roleService;
   }
 
   // Consolidated method to create a new user with automatic role assignment
-  async createUser(
-    userData: Omit<User, "id">
-  ): Promise<User> {
+  async createUser(userData: Omit<User, "id">): Promise<User> {
     try {
       // Check if email already exists
       const existingUser = await userModel.findByEmail(userData.email);
       if (existingUser) {
-        throw new ConflictError('User with this email already exists');
+        throw new ConflictError("User with this email already exists");
       }
 
       // Hash the password
       const saltRounds = 12;
       const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-      
+
       const userToCreate = {
         ...userData,
-        password: hashedPassword
+        password: hashedPassword,
       };
 
       // deafult role name for all users during registration is "learner"
       const defaultRole = await this.roleService.getRoleByName("learner");
       if (!defaultRole || !defaultRole.id) {
-        throw new NotFoundError("Default 'learner' role not found or has no ID");
+        throw new NotFoundError(
+          "Default 'learner' role not found or has no ID",
+        );
       }
       // I only need the role id for the learner. There is no need for array of roles anymore.
       const roleId = defaultRole.id;
       userToCreate.role_id = roleId;
-      
+
       // Create the user and assign roles atomically
       const createdUser = await userModel.create(userToCreate);
 
@@ -107,7 +107,7 @@ export class UserService {
       if (!existingUser) {
         throw new NotFoundError("User not found");
       }
-      
+
       const userToUpdate = { ...existingUser, ...user };
 
       // Hash the password if it's being updated
@@ -115,7 +115,7 @@ export class UserService {
         const saltRounds = 12;
         userToUpdate.password = await bcrypt.hash(user.password, saltRounds);
       }
-      
+
       await userModel.update(userToUpdate.id!, userToUpdate);
 
       // Fetch and return the updated user
@@ -139,7 +139,7 @@ export class UserService {
   // Verify password for login
   async verifyPassword(
     plainPassword: string,
-    hashedPassword: string
+    hashedPassword: string,
   ): Promise<boolean> {
     try {
       return await bcrypt.compare(plainPassword, hashedPassword);
@@ -152,7 +152,7 @@ export class UserService {
   // Authenticate user with email and password
   async authenticateUser(
     email: string,
-    password: string
+    password: string,
   ): Promise<User | null> {
     try {
       const user = await userModel.findByEmail(email);
@@ -162,7 +162,7 @@ export class UserService {
 
       const isPasswordValid = await this.verifyPassword(
         password,
-        user.password
+        user.password,
       );
       if (!isPasswordValid) {
         return null;
@@ -192,7 +192,9 @@ export class UserService {
 
       const updatedUser = await userModel.findById(userId);
       if (!updatedUser) {
-        throw new NotFoundError("Failed to fetch updated user after role change");
+        throw new NotFoundError(
+          "Failed to fetch updated user after role change",
+        );
       }
       return updatedUser;
     } catch (error) {

@@ -1,21 +1,18 @@
 // Export all middleware for easy importing
-export { AuthMiddleware } from './auth.middleware';
 export { RBACMiddleware } from './rbac.middleware';
 export { ValidationMiddleware } from './validation.middleware';
-export { ErrorMiddleware } from './error.middleware';
 
 // Common middleware combinations for convenience
-import { AuthMiddleware } from './auth.middleware';
 import { RBACMiddleware } from './rbac.middleware';
 import { ValidationMiddleware } from './validation.middleware';
-import { ErrorMiddleware } from './error.middleware';
+import { authenticate } from './auth.middleware';
 
 export class MiddlewareCombo {
   
   // Authentication + specific role requirement
   static authWithRole(allowedRoles: string | string[]) {
     return [
-      AuthMiddleware.authenticate,
+      authenticate,
       RBACMiddleware.requireRole(allowedRoles)
     ];
   }
@@ -23,7 +20,7 @@ export class MiddlewareCombo {
   // Authentication + mentor role requirement
   static authWithMentorRole() {
     return [
-      AuthMiddleware.authenticate,
+      authenticate,
       RBACMiddleware.requireMentorRole()
     ];
   }
@@ -31,7 +28,7 @@ export class MiddlewareCombo {
   // Authentication + admin role requirement
   static authWithAdminRole() {
     return [
-      AuthMiddleware.authenticate,
+      authenticate,
       RBACMiddleware.requireAdminRole()
     ];
   }
@@ -39,7 +36,7 @@ export class MiddlewareCombo {
   // Authentication + minimum role level requirement
   static authWithMinRoleLevel(minimumLevel: number) {
     return [
-      AuthMiddleware.authenticate,
+      authenticate,
       RBACMiddleware.requireMinimumRoleLevel(minimumLevel)
     ];
   }
@@ -47,7 +44,7 @@ export class MiddlewareCombo {
   // Authentication + ownership or admin check
   static authWithOwnershipOrAdmin(userIdParam: string = 'userId') {
     return [
-      AuthMiddleware.authenticate,
+      authenticate,
       RBACMiddleware.requireOwnershipOrAdmin(userIdParam)
     ];
   }
@@ -71,7 +68,7 @@ export class MiddlewareCombo {
   // Role assignment validation chain (admin only)
   static roleAssignmentChain() {
     return [
-      AuthMiddleware.authenticate,
+      authenticate,
       RBACMiddleware.requireAdminRole(),
       ValidationMiddleware.sanitizeInput(),
       ValidationMiddleware.validateRoleAssignment()
@@ -82,7 +79,7 @@ export class MiddlewareCombo {
   static protectedResourceAccess(idParam: string = 'id', userIdParam: string = 'userId') {
     return [
       ValidationMiddleware.validateNumericId(idParam),
-      AuthMiddleware.authenticate,
+      authenticate,
       RBACMiddleware.requireOwnershipOrAdmin(userIdParam)
     ];
   }

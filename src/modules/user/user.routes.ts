@@ -1,9 +1,25 @@
 import { Router } from "express";
+import { RoleService } from "./role.service";
+import { UserService } from "./user.service";
+import { FollowService } from "./follows.service";
 import { UserController } from "./user.controller";
 import { RBACMiddleware } from "../../shared/middleware/rbac.middleware";
+import { MiddlewareCombo, ValidationMiddleware } from "../../shared/middleware";
+import { FollowController } from "./follows.controller";
+import { authenticate } from "../../shared/middleware/auth.middleware";
+import { addSkillLimiter, followsLimiter, removeSkillLimiter } from "../../shared/middleware/rateLimiter";
+import { UserSkillService } from "./user_skill.service";
+import { UserSkillController } from "./user_skill.controller";
 
 const router = Router();
-const userController = new UserController();
+const roleService = new RoleService();
+const userService = new UserService(roleService);
+const followService = new FollowService(userService);
+const userSkillService = new UserSkillService();
+const userController = new UserController(userService);
+const followController = new FollowController(followService);
+const userSkillController = new UserSkillController(userSkillService);
+
 
 /**
  * @swagger
@@ -46,7 +62,7 @@ const userController = new UserController();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/", userController.createUser.bind(userController));
+// router.post("/", userController.createUser.bind(userController));
 
 /**
  * @swagger
@@ -88,7 +104,11 @@ router.post("/", userController.createUser.bind(userController));
  *               $ref: '#/components/schemas/Error'
  */
 // Must be authorized, admin, super_admin, moderator, or mentor to view all users
-router.get("/", RBACMiddleware.requireRole(['mentor', 'moderator', 'admin', 'super_admin']), userController.getAllUsers.bind(userController));
+router.get(
+  "/",
+  ...MiddlewareCombo.authWithAdminRole(),
+  userController.getAllUsers.bind(userController),
+);
 
 /**
  * @swagger
@@ -145,7 +165,11 @@ router.get("/", RBACMiddleware.requireRole(['mentor', 'moderator', 'admin', 'sup
  *             example:
  *               error: "User not found"
  */
-router.get("/:id", userController.getUserById.bind(userController));
+router.get(
+  "/:id",
+  ...MiddlewareCombo.authWithOwnershipOrAdmin(),
+  userController.getUserById.bind(userController),
+);
 
 /**
  * @swagger
@@ -214,7 +238,11 @@ router.get("/:id", userController.getUserById.bind(userController));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put("/:id", userController.updateUser.bind(userController));
+router.put(
+  "/:id",
+  ...MiddlewareCombo.authWithOwnershipOrAdmin(),
+  userController.updateUser.bind(userController),
+);
 
 /**
  * @swagger
@@ -261,7 +289,11 @@ router.put("/:id", userController.updateUser.bind(userController));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete("/:id", userController.deleteUser.bind(userController));
+router.delete(
+  "/:id",
+  ...MiddlewareCombo.authWithOwnershipOrAdmin(),
+  userController.deleteUser.bind(userController),
+);
 
 /**
  * @swagger
@@ -328,6 +360,145 @@ router.delete("/:id", userController.deleteUser.bind(userController));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put("/role", RBACMiddleware.requireAdminRole(), userController.updateUserRole.bind(userController));
+router.put(
+  "/role",
+  ...MiddlewareCombo.roleAssignmentChain(),
+  userController.updateUserRole.bind(userController),
+);
+
+// follow routes — sub-resource of users
+
+/**
+ * @swagger
+ * /users/{id}/follow:
+ *   post:
+ *     summary: Follow a user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: UUID of the user to follow
+ *         example: "def456gh-7890-1234-ijkl-mnopqrstuvwx"
+ *     responses:
+ *       201:
+ *         description: Successfully followed the user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
+ *             example:
+ *               message: "You are now following this user"
+ *       400:
+ *         description: Invalid UUID format or trying to follow oneself
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               error: "You cannot follow yourself."
+ *       401:
+ *         description: Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User to follow not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               error: "User not found"
+ */
+router.post(
+  "/:id/follow",
+  followsLimiter,
+  authenticate,
+  followController.createFollow.bind(followController),
+);
+
+/**
+ * @swagger
+ * /users/{id}/follow:
+ *   delete:
+ *     summary: Unfollow a user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: UUID of the user to unfollow
+ *         example: "def456gh-7890-1234-ijkl-mnopqrstuvwx"
+ *     responses:
+ *       204:
+ *         description: Successfully unfollowed the user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
+ *             example:
+ *               message: "You are no longer following this user"
+ *       401:
+ *         description: Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User to unfollow not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               error: "User not found"
+ */
+router.delete(
+  "/:id/follow",
+  followsLimiter,
+  authenticate,
+  followController.unfollow.bind(followController),
+);
+router.get(
+  "/:id/followers",
+  ValidationMiddleware.validateUUID("id"),
+  authenticate,
+  followController.getFollowers.bind(followController),
+);
+router.get(
+  "/:id/following",
+  ValidationMiddleware.validateUUID("id"),
+  authenticate,
+  followController.getFollowing.bind(followController),
+);
+router.get(
+  "/:id/mutual",
+  ValidationMiddleware.validateUUID("id"),
+  authenticate,
+  followController.checkMutualFollow.bind(followController),
+);
+
+// Additional routes for user skills can be added here
+router.post("/skills", addSkillLimiter, authenticate, userSkillController.addUserSkill.bind(userSkillController));
+
+router.get("/skills", authenticate, userSkillController.getUserSkills.bind(userSkillController));
+
+router.get("/skills/:skillId", userSkillController.getUsersBySkill.bind(userSkillController));
+
+router.get("/:userId/skills", ValidationMiddleware.validateUUID("userId"), authenticate, userSkillController.getUserSkillsByUserId.bind(userSkillController));
+
+router.delete("/skills/:skillId", removeSkillLimiter, authenticate, userSkillController.removeUserSkill.bind(userSkillController));
 
 export default router;

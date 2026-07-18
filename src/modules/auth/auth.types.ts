@@ -5,15 +5,13 @@ export interface AuthUserResponse {
   user:         SafeUser;
   access_token: string;
   refresh_token: string;
+  session_id: string;
 }
 
 export interface RefreshTokenResponse {
   access_token: string;
-}
-
-// Returned after registration or OTP resend
-export interface MessageResponse {
-  message: string;
+  refresh_token: string;
+  session_id: string;
 }
 
 // JWT payload shape
@@ -22,3 +20,4 @@ export interface JwtPayload {
   email:   string;
   role_id: string;
 }
+
