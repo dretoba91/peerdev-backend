@@ -41,14 +41,26 @@ export const UserSkillRepository = {
   },
 
   // get any user by their skill
-  async getUsersBySkill(skillId: string): Promise<User[]> {
-    const [rows] = await pool.execute(
+  async getUsersBySkill(skillId: string, limit: number, offset: number): Promise<{users: User[], total: number}> {
+    const [userData, countResult] = await Promise.all([
+        pool.execute(
       `SELECT u.id, u.first_name, u.last_name, u.username, u.experience_level FROM users u
              JOIN user_skills us ON u.id = us.user_id
-             WHERE us.skill_id = ?`,
-      [skillId],
-    );
-    return rows as User[];
+             WHERE us.skill_id = ?
+             LIMIT ? OFFSET ?`,
+
+      [skillId, limit, offset],
+    ),
+    pool.execute(
+        `SELECT COUNT(*) as total FROM users u
+             JOIN user_skills us ON u.id = us.user_id
+             WHERE us.skill_id = ?`, [skillId]
+    )
+    ]) as [[User[], any], [{ total: number }[], any]];
+    const rows = userData[0];
+    const total = countResult[0][0].total;
+
+    return {users: rows, total: total};
   },
 
   // check if user already has a skill

@@ -1,5 +1,9 @@
 import { ConflictError } from "../../shared/utils/errors";
 import { logger } from "../../shared/utils/loggers";
+import {
+  buildPagination,
+  PaginatedResponse,
+} from "../../shared/utils/pagination";
 import { MessageResponse } from "../../shared/utils/response";
 import { SkillRepository } from "./skill.repository";
 import { Skill } from "./skill.type";
@@ -21,15 +25,32 @@ export class SkillService {
   }
 
   // get all skills
-  async getSkillsByName(name: string): Promise<Skill[]> {
+  async getSkillsByName(
+    name: string,
+    page: any,
+    limit: any,
+  ): Promise<PaginatedResponse<Skill>> {
     try {
+      const parsedPage = Math.max(1, parseInt(page) || 1);
+      const parsedLimit = Math.max(1, Math.min(100, parseInt(limit) || 10));
+      const offset = (parsedPage - 1) * parsedLimit;
       // if name is empty string, it will return all skills. Otherwise, it will return skills that match the name search.
       if (!name) {
-        return await SkillRepository.findAll();
+        const { skills, total } = await SkillRepository.findAll(
+          parsedLimit,
+          offset,
+        );
+        const pagination = buildPagination(total, parsedPage, parsedLimit);
+        return { data: skills, pagination };
       }
 
-      const skills = await SkillRepository.findByName(name);
-      return skills;
+      const {skills, total} = await SkillRepository.findByName(name, parsedLimit, offset);
+      const pagination = buildPagination(
+        total,
+        parsedPage,
+        parsedLimit,
+      );
+      return { data: skills, pagination };
     } catch (error) {
       logger.error("Get skills by name error:", error);
       throw error;

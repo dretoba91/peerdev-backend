@@ -1,5 +1,5 @@
 CREATE TABLE user_sessions (
-    id VARCHAR(36) PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     user_id VARCHAR(36) NOT NULL,
     refresh_token VARCHAR(255) NOT NULL,
 

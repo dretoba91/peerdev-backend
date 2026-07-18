@@ -15,6 +15,7 @@ import { RoleService } from "./role.service";
 import { logger } from "../../shared/utils/loggers";
 import bcrypt from "bcryptjs";
 import { ConflictError, NotFoundError } from "../../shared/utils/errors";
+import { buildPagination, PaginatedResponse } from "../../shared/utils/pagination";
 
 export class UserService {
   private roleService: RoleService;
@@ -68,15 +69,18 @@ export class UserService {
   }
 
   // Find all users
-  async findAllUsers(): Promise<User[]> {
-    try {
-      const users = await userModel.findAll();
-      return users as User[];
-    } catch (error) {
-      logger.error("Find all users error:", error);
-      throw error;
-    }
-  }
+  async findAllUsers(page: any, limit: any): Promise<PaginatedResponse<User>> {
+    const parsedPage  = Math.max(1, parseInt(page) || 1);
+    const parsedLimit = Math.max(1, Math.min(100, parseInt(limit) || 10));
+    const offset      = (parsedPage - 1) * parsedLimit;
+
+    const { users, total } = await userModel.findAll(parsedLimit, offset);
+
+    // buildPagination calculates totalPages, hasNextPage etc.
+    const pagination = buildPagination(total, parsedPage, parsedLimit);
+
+    return { data: users, pagination: pagination };
+}
 
   // Find user by id
   async findUserById(id: string): Promise<User | null> {
